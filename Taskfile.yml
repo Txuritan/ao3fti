@@ -1,0 +1,8 @@
+version: '3'
+
+tasks:
+  build-tailwind:
+    env:
+      NODE_ENV: production
+    cmds:
+      - npx tailwindcss -c tailwind.config.js -i assets/src.css -o assets/dest.min.css --minify

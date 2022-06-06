@@ -1,0 +1,18 @@
+[package]
+name = "ao3fti"
+version = "0.1.0"
+edition = "2021"
+
+workspace = ".."
+
+[dependencies]
+ao3fti-common = { path = "../ao3fti-common" }
+ao3fti-command-scrape = { path = "../ao3fti-command-scrape" }
+ao3fti-command-serve = { path = "../ao3fti-command-serve" }
+
+clap = { version = "3.1.18", features = [ "derive" ] }
+tokio = { version = "1.14", features = [ "full" ] }
+tracing = "0.1"
+tracing-error = "0.2.0"
+tracing-subscriber = "0.3.11"
+tracing-tree = "0.2.1"

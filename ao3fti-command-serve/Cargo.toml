@@ -1,0 +1,21 @@
+[package]
+name = "ao3fti-command-serve"
+version = "0.1.0"
+edition = "2021"
+
+workspace = ".."
+
+[dependencies]
+ao3fti-common = { path = "../ao3fti-common" }
+ao3fti-indexer = { path = "../ao3fti-indexer" }
+ao3fti-queries = { path = "../ao3fti-queries" }
+
+askama = "0.11"
+axum = "0.5"
+axum-core = "0.2"
+serde = { version = "1.0", features = [ "derive" ] }
+serde_urlencoded = "0.7"
+tokio = { version = "1.18", features = [ "rt" ] }
+tower = { version = "0.4", features = [ "limit", "load-shed", "timeout", "util" ] }
+tower-http = { version = "0.3", features = [ "auth", "metrics", "trace" ] }
+tracing = "0.1"

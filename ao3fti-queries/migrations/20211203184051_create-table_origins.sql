@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS origins (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);

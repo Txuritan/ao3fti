@@ -1,0 +1,5 @@
+/chapter-index
+/node_modules
+/target
+
+*.html

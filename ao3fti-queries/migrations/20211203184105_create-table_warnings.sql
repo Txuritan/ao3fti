@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS warnings (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);

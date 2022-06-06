@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "ao3fti",
+    "ao3fti-command-scrape",
+    "ao3fti-command-serve",
+    "ao3fti-common",
+    "ao3fti-indexer",
+    "ao3fti-queries",
+]

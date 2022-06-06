@@ -1,0 +1,22 @@
+[package]
+name = "ao3fti-command-scrape"
+version = "0.1.0"
+edition = "2021"
+
+workspace = ".."
+
+[dependencies]
+ao3fti-common = { path = "../ao3fti-common" }
+ao3fti-indexer = { path = "../ao3fti-indexer" }
+ao3fti-queries = { path = "../ao3fti-queries" }
+
+futures = "0.3"
+html5ever = "=0.26.0"
+isahc = "1.6"
+markup5ever = "=0.11"
+markup5ever_arcdom = "=0.1.2"
+rand = "0.8"
+serde = { version = "1.0", features = [ "derive" ] }
+serde_json = "1.0"
+tracing = "0.1"
+tokio = { version = "1.14", features = [ "macros" ] }
