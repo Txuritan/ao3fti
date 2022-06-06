@@ -34,6 +34,21 @@ pub async fn check_story_if_exists(
     Ok(existing.is_some())
 }
 
+pub async fn get_story_count(pool: PgPool) -> Result<i64, ao3fti_common::Report> {
+    struct Count {
+        estimate: Option<i64>,
+    }
+
+    let count = sqlx::query_as!(
+        Count,
+        "SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'stories';"
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    Ok(count.estimate.unwrap_or_default())
+}
+
 macro_rules! get_or_create {
     ($fn_name:ident, $select:expr, $insert:expr) => {
         #[tracing::instrument(skip(trans), err)]

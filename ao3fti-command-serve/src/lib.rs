@@ -58,10 +58,20 @@ static STYLE: &str = include_str!("../../assets/dest.min.css");
 #[template(path = "index.html")]
 struct IndexPage {
     css: &'static str,
+    stories: i64,
 }
 
-async fn index() -> Result<impl IntoResponse, Error> {
-    Ok(Html(IndexPage { css: STYLE }.render().map_err(Error::from_any)?))
+async fn index(Extension(pool): Extension<PgPool>) -> Result<impl IntoResponse, Error> {
+    let count = ao3fti_queries::get_story_count(pool).await?;
+
+    Ok(Html(
+        IndexPage {
+            css: STYLE,
+            stories: count,
+        }
+        .render()
+        .map_err(Error::from_any)?,
+    ))
 }
 
 async fn search_api(
@@ -138,14 +148,21 @@ async fn search_html(
         }
     }
 
-    let url_fragment = serde_urlencoded::to_string(&SearchQueryPart { query: &search.query }).map_err(Error::from_any)?;
+    let url_fragment = serde_urlencoded::to_string(&SearchQueryPart {
+        query: &search.query,
+    })
+    .map_err(Error::from_any)?;
 
     Ok(Html(
         Search {
             css: STYLE,
             query: search.query,
             stories,
-            pagination: Pagination::new(url_fragment, search.page, (num_hits + SEARCH_LIMIT - 1) / SEARCH_LIMIT),
+            pagination: Pagination::new(
+                url_fragment,
+                search.page,
+                (num_hits + SEARCH_LIMIT - 1) / SEARCH_LIMIT,
+            ),
         }
         .render()
         .map_err(Error::from_any)?,

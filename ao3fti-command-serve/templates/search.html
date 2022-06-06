@@ -1,0 +1,163 @@
+{%- macro story(s) -%}
+<div class="px-3 sm:px-6 lg:px-8 my-2">
+    <div class="flex">
+        <div>
+            <slot name="tile"></slot>
+        </div>
+        <div class="flex-1 flex flex-col">
+            <p class="text-lg">
+                <a href="https://archiveofourown.org/works/{{ s.id }}?view_adult=true" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 text-opacity-90">{{ s.name }}</a>
+                <span class="text-opacity-60 text-white">by</span>
+                {% for author in s.authors %}
+                <a href="#" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 text-opacity-90">{{ author.name }}</a>
+                {%- if loop.index != s.origins.len() -%}<span class="text-opacity-60 text-white">, </span>{%- endif -%}
+                {% endfor %}
+            </p>
+            <p class="text-sm">
+                {% for origin in s.origins %}
+                <a href="#" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 text-opacity-60">{{ origin.name }}</a>
+                {%- if loop.index != s.origins.len() -%}<span class="text-opacity-60 text-white">, </span>{%- endif -%}
+                {% endfor %}
+            </p>
+        </div>
+        <div>
+            <p class="text-sm text-opacity-60 text-white"></p>
+        </div>
+    </div>
+    <div class="text-sm text-opacity-60 text-white p-wrapper">
+        {{ s.summary|safe }}
+    </div>
+    <div class="text-sm">
+        <ul class="flex flex-wrap">
+            {%- for tag in s.warnings -%}
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-red-400 hover:bg-red-500" href="#">{{ tag.name }}</a></li>
+            {%- endfor -%}
+            {%- for tag in s.pairings -%}
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-yellow-400 hover:bg-yellow-500" href="#">{{ tag.name }}</a></li>
+            {%- endfor -%}
+            {%- for tag in s.characters -%}
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-blue-400 hover:bg-blue-500" href="#">{{ tag.name }}</a></li>
+            {%- endfor -%}
+            {%- for tag in s.generals -%}
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-gray-400 hover:bg-gray-500" href="#">{{ tag.name }}</a></li>
+            {%- endfor -%}
+        </ul>
+    </div>
+</div>
+{%- endmacro -%}
+
+{%- macro link(l) -%}
+<a class="inline-block py-2 px-3 relative -top-px border-t-2 {% if l.state == LinkState::Active %}border-blue-400 text-base text-blue-400 text-opacity-90{% else if l.state == LinkState::Normal %}border-transparent text-base text-white text-opacity-60 hover:text-blue-400{% else %}border-transparent text-base text-white text-opacity-40{% endif %}" href="{{ l.href }}">{{ l.text }}</a>
+{%- endmacro -%}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ao3fti</title>
+    <style>{{ css|safe }}</style>
+</head>
+
+<body class="bg-gray-900">
+    <!-- Being Navigation -->
+    <nav>
+        <div class="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8 pt-2">
+            <div class="relative flex items-center justify-between h-10">
+                <div class="absolute inset-y-0 left-0 flex items-center md:hidden">
+                    <!-- Mobile menu button-->
+                    <button id="mobile-menu-button" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-colors duration-75" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <svg id="mobile-menu-open" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg id="mobile-menu-close" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex-1 flex items-center justify-center md:items-stretch md:justify-start">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/" class="text-white hover:text-blue-400 transition-colors duration-75 font-bold tracking-widest my-2 rounded">ao3fti</a>
+                    </div>
+                    <div class="hidden md:block md:ml-3">
+                        <div class="flex">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-inital flex items-center justify-center md:items-stretch md:justify-start">
+                    <div class="hidden md:block md:ml-3">
+                        <input type="text" class="border-0 text-white bg-gray-700 px-2 py-1 rounded" placeholder="search" value="{{ query }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu, show/hide based on menu state. -->
+        <div id="mobile-menu" class="hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <div class="flex flex-col">
+                    <input type="text" class="border-0 text-white bg-gray-700 px-3 py-1 rounded w-full" placeholder="search" value="{{ query }}">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <script>
+        let isOpen = false;
+        const mobileMenu = document.getElementById("mobile-menu");
+        const mobileMenuOpen = document.getElementById("mobile-menu-open");
+        const mobileMenuClose = document.getElementById("mobile-menu-close");
+        mobileMenuOpen.classList.add("block");
+        mobileMenuClose.classList.add("hidden");
+        document.getElementById("mobile-menu-button").addEventListener("click", () => {
+            mobileMenuOpen.classList.toggle("block");
+            mobileMenuOpen.classList.toggle("hidden");
+            mobileMenuClose.classList.toggle("hidden");
+            mobileMenuClose.classList.toggle("block");
+            mobileMenu.classList.toggle("hidden");
+            mobileMenu.classList.toggle("md:hidden");
+        });
+    </script>
+    <!-- End Navigation -->
+
+    <!-- Being Main Content -->
+    <div class="max-w-6xl mx-auto mb-16">
+        <main>
+            <!-- Begin Story List -->
+            {% if stories.is_empty() %}
+            {% else %}
+                {% for s in stories %}
+                    {% call story(s) %}
+                    {% if loop.index != stories.len() %}
+                    <div class="sm:px-6 lg:px-8 text-sm" aria-hidden="true">
+                        <div class="border-t border-gray-700"></div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+            <!-- End Story List -->
+
+            <!-- Being Pagination -->
+            <div class="sm:px-6 lg:px-8 text-sm" aria-hidden="true">
+                <div class="border-t border-gray-700"></div>
+                <div class="flex">
+                    <div class="flex-auto">
+                        {% call link(pagination.prev) %}
+                    </div>
+                    {% for part in pagination.parts %}
+                    {% call link(part) %}
+                    {% endfor %}
+                    <div class="flex-auto flex justify-end">
+                        {% call link(pagination.next) %}
+                    </div>
+                </div>
+            </div>
+            <!-- End Pagination -->
+        </main>
+    </div>
+    <!-- End Main Content -->
+</body>
+
+</html>
