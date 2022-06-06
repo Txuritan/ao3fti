@@ -1,10 +1,10 @@
 const colors = require('tailwindcss/colors');
 
 module.exports = {
-    purge: [
+    content: [
         './ao3fti-command-serve/templates/**/*.html',
     ],
-    darkMode: false,
+    darkMode: "media",
     theme: {
         extend: {
             colors: {
