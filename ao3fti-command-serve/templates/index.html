@@ -8,12 +8,12 @@
     <style>{{ css|safe }}</style>
 </head>
 
-<body class="bg-gray-900">
-    <div class="bg-gray-900">
+<body class="bg-stone-900">
+    <div class="bg-stone-900">
         <div class="min-h-screen flex flex-col justify-center items-center">
             <h1 class="text-2xl text-white text-opacity-90">Archive Of Our Own Full-Text Index</h1>
             <form class="py-2 w-5/12" action="/search" method="GET">
-                <input class="border-0 text-white bg-gray-700 px-4 py-1.5 rounded w-full" type="text" id="query" name="query" placeholder="search">
+                <input class="border-0 text-white bg-stone-700 px-4 py-1.5 rounded w-full" type="text" id="query" name="query" placeholder="search">
                 <input class="invisible" type="hidden" name="page" value="1">
             </form>
             <p class="text-white text-opacity-60">Stories Indexed: {{ stories }}</p>

@@ -6,16 +6,16 @@
         </div>
         <div class="flex-1 flex flex-col">
             <p class="text-lg">
-                <a href="https://archiveofourown.org/works/{{ s.id }}?view_adult=true" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 text-opacity-90">{{ s.name }}</a>
+                <a href="https://archiveofourown.org/works/{{ s.id }}?view_adult=true" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900 focus:ring-blue-400 text-opacity-90">{{ s.name }}</a>
                 <span class="text-opacity-60 text-white">by</span>
                 {% for author in s.authors %}
-                <a href="#" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 text-opacity-90">{{ author.name }}</a>
+                <a href="#" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900 focus:ring-blue-400 text-opacity-90">{{ author.name }}</a>
                 {%- if loop.index != s.origins.len() -%}<span class="text-opacity-60 text-white">, </span>{%- endif -%}
                 {% endfor %}
             </p>
             <p class="text-sm">
                 {% for origin in s.origins %}
-                <a href="#" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 text-opacity-60">{{ origin.name }}</a>
+                <a href="#" class="text-white hover:text-blue-400 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900 focus:ring-blue-400 text-opacity-60">{{ origin.name }}</a>
                 {%- if loop.index != s.origins.len() -%}<span class="text-opacity-60 text-white">, </span>{%- endif -%}
                 {% endfor %}
             </p>
@@ -30,16 +30,16 @@
     <div class="text-sm">
         <ul class="flex flex-wrap">
             {%- for tag in s.warnings -%}
-                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-red-400 hover:bg-red-500" href="#">{{ tag.name }}</a></li>
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900 focus:ring-blue-400 bg-red-400 hover:bg-red-500" href="#">{{ tag.name }}</a></li>
             {%- endfor -%}
             {%- for tag in s.pairings -%}
-                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-yellow-400 hover:bg-yellow-500" href="#">{{ tag.name }}</a></li>
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900 focus:ring-blue-400 bg-yellow-400 hover:bg-yellow-500" href="#">{{ tag.name }}</a></li>
             {%- endfor -%}
             {%- for tag in s.characters -%}
-                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-blue-400 hover:bg-blue-500" href="#">{{ tag.name }}</a></li>
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900 focus:ring-blue-400 bg-blue-400 hover:bg-blue-500" href="#">{{ tag.name }}</a></li>
             {%- endfor -%}
             {%- for tag in s.generals -%}
-                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-400 bg-gray-400 hover:bg-gray-500" href="#">{{ tag.name }}</a></li>
+                <li><a class="inline-block text-sm mr-1.5 mb-1.5 px-2 py-0.5 transition-colors duration-75 rounded focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900 focus:ring-blue-400 bg-stone-400 hover:bg-stone-500" href="#">{{ tag.name }}</a></li>
             {%- endfor -%}
         </ul>
     </div>
@@ -60,14 +60,14 @@
     <style>{{ css|safe }}</style>
 </head>
 
-<body class="bg-gray-900">
+<body class="bg-stone-900">
     <!-- Being Navigation -->
     <nav>
         <div class="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8 pt-2">
             <div class="relative flex items-center justify-between h-10">
                 <div class="absolute inset-y-0 left-0 flex items-center md:hidden">
                     <!-- Mobile menu button-->
-                    <button id="mobile-menu-button" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-colors duration-75" aria-controls="mobile-menu" aria-expanded="false">
+                    <button id="mobile-menu-button" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-stone-400 hover:text-white hover:bg-stone-700 transition-colors duration-75" aria-controls="mobile-menu" aria-expanded="false">
                         <span class="sr-only">Open main menu</span>
                         <svg id="mobile-menu-open" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -88,7 +88,7 @@
                 </div>
                 <div class="flex-inital flex items-center justify-center md:items-stretch md:justify-start">
                     <div class="hidden md:block md:ml-3">
-                        <input type="text" class="border-0 text-white bg-gray-700 px-2 py-1 rounded" placeholder="search" value="{{ query }}">
+                        <input type="text" class="border-0 text-white bg-stone-700 px-2 py-1 rounded" placeholder="search" value="{{ query }}">
                     </div>
                 </div>
             </div>
@@ -98,7 +98,7 @@
         <div id="mobile-menu" class="hidden">
             <div class="px-2 pt-2 pb-3 space-y-1">
                 <div class="flex flex-col">
-                    <input type="text" class="border-0 text-white bg-gray-700 px-3 py-1 rounded w-full" placeholder="search" value="{{ query }}">
+                    <input type="text" class="border-0 text-white bg-stone-700 px-3 py-1 rounded w-full" placeholder="search" value="{{ query }}">
                 </div>
             </div>
         </div>
@@ -132,7 +132,7 @@
                     {% call story(s) %}
                     {% if loop.index != stories.len() %}
                     <div class="sm:px-6 lg:px-8 text-sm" aria-hidden="true">
-                        <div class="border-t border-gray-700"></div>
+                        <div class="border-t border-stone-700"></div>
                     </div>
                     {% endif %}
                 {% endfor %}
@@ -141,7 +141,7 @@
 
             <!-- Being Pagination -->
             <div class="sm:px-6 lg:px-8 text-sm" aria-hidden="true">
-                <div class="border-t border-gray-700"></div>
+                <div class="border-t border-stone-700"></div>
                 <div class="flex">
                     <div class="flex-auto">
                         {% call link(pagination.prev) %}
