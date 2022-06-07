@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use ao3fti_common::models::Story;
+use ao3fti_common::{models::Story, Conf};
 use ao3fti_indexer::{
     Hit, IndexServer, NamedFieldDocument, SearchQuery as ApiSearchQuery, Serp, Value,
 };
@@ -17,8 +17,8 @@ use axum::{
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
-pub async fn run() -> Result<(), ao3fti_common::Report> {
-    let pool = ao3fti_queries::init_database_connection().await?;
+pub async fn run(conf: &Conf) -> Result<(), ao3fti_common::Report> {
+    let pool = ao3fti_queries::init_database_connection(conf).await?;
     let index_server = IndexServer::new()?;
 
     let app: _ = Router::new()

@@ -50,6 +50,7 @@ dependencies = [
  "tracing-error",
  "tracing-subscriber",
  "tracing-tree",
+ "twelf",
 ]
 
 [[package]]
@@ -98,6 +99,7 @@ dependencies = [
  "http",
  "serde",
  "tracing",
+ "twelf",
 ]
 
 [[package]]
@@ -443,6 +445,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "config-derive"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b0e4c49b0c757bc8936315477a8c9844a49065e8e2a8be58f269a406211513e"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -659,6 +673,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9852635589dc9f9ea1b6fe9f05b50ef208c85c834a562f0c6abb1c475736ec2b"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "envy"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f47e0157f2cb54f5ae1bd371b30a2ae4311e1c028f575cd4e81de7353215965"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -2649,6 +2672,22 @@ name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
+
+[[package]]
+name = "twelf"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9cf76ab58f4a112053cf4ac3f96fecf9770738d7e6f85ba1a8d400bf9d52db1"
+dependencies = [
+ "clap",
+ "config-derive",
+ "envy",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
+]
 
 [[package]]
 name = "twox-hash"

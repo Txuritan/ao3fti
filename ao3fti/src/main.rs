@@ -1,8 +1,11 @@
 mod verbose;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, IntoApp as _, FromArgMatches as _};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
+use twelf::Layer;
+
+use ao3fti_common::Conf;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -25,7 +28,16 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), ao3fti_common::Report> {
-    let cli = Cli::parse();
+    ao3fti_common::install()?;
+
+    let matches = Cli::command().args(&Conf::clap_args()).get_matches();
+    let cli = Cli::from_arg_matches(&matches)?;
+    let conf = Conf::with_layers(&[
+        Layer::Json("ao3fti.json".into()),
+        Layer::Toml("ao3fti.toml".into()),
+        Layer::Env(Some("AO3FTI_".to_string())),
+        Layer::Clap(matches)
+    ])?;
 
     let subscriber = Registry::default()
         .with(ErrorLayer::default())
@@ -34,11 +46,9 @@ async fn main() -> Result<(), ao3fti_common::Report> {
 
     tracing::subscriber::set_global_default(subscriber)?;
 
-    ao3fti_common::install()?;
-
     match cli.command {
-        Commands::Scrape { url } => ao3fti_command_scrape::run(&url).await?,
-        Commands::Serve => ao3fti_command_serve::run().await?,
+        Commands::Scrape { url } => ao3fti_command_scrape::run(&conf, &url).await?,
+        Commands::Serve => ao3fti_command_serve::run(&conf).await?,
     }
 
     Ok(())

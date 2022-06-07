@@ -11,3 +11,4 @@ crossbeam-channel = "0.5"
 http = "0.2"
 serde = { version = "1.0", features = [ "derive" ] }
 tracing = "0.1"
+twelf = { version = "0.5.0", default-features = false }

@@ -5,16 +5,16 @@ use ao3fti_common::{
     channel::{self, Sender},
     err,
     models::Rating,
-    Context as _, Report, Uri,
+    Context as _, Report, Uri, Conf,
 };
 use ao3fti_indexer::ChapterLine;
 use ao3fti_queries::{Info, Meta, PgPool, PgTransaction};
 use futures::future::TryFutureExt as _;
 use tracing::{Instrument as _, Span};
 
-#[tracing::instrument(skip(url), err)]
-pub async fn run(url: &str) -> Result<(), ao3fti_common::Report> {
-    let pool = ao3fti_queries::init_database_connection().await?;
+#[tracing::instrument(skip(conf, url), err)]
+pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
+    let pool = ao3fti_queries::init_database_connection(conf).await?;
 
     let (line_sender, line_receiver) = channel::bounded(10_000);
 

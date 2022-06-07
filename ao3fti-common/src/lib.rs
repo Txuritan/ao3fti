@@ -9,3 +9,15 @@ pub use {
     },
     http::Uri,
 };
+
+#[twelf::config]
+pub struct Conf {
+    /// PostgreSQL connection URI
+    pub database: String,
+
+    /// Your Archive Of Our Own username
+    pub username: Option<String>,
+
+    /// Your Archive Of Our Own password
+    pub password: Option<String>,
+}
