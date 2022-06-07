@@ -5,7 +5,7 @@ use ao3fti_common::{
     channel::{self, Sender},
     err,
     models::Rating,
-    Context as _, Report, Uri, Conf,
+    Conf, Context as _, Report, Uri,
 };
 use ao3fti_indexer::ChapterLine;
 use ao3fti_queries::{Info, Meta, PgPool, PgTransaction};

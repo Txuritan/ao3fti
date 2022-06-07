@@ -1,16 +1,16 @@
-use html5ever::serialize::{self, TraversalScope};
-use markup5ever_arcdom::SerializableHandle;
-
 // Modified version of crabquery
 
-use {
-    html5ever::{
-        driver::ParseOpts, parse_document, tendril::TendrilSink, tree_builder::TreeBuilderOpts,
-    },
-    markup5ever::{Attribute, QualName},
-    markup5ever_arcdom::{ArcDom, Handle, NodeData},
-    std::{cell::Ref, collections::HashMap, convert::TryFrom, sync::Arc},
+use std::{cell::Ref, collections::HashMap, convert::TryFrom, sync::Arc};
+
+use html5ever::{
+    driver::ParseOpts,
+    parse_document,
+    serialize::{self, TraversalScope},
+    tendril::TendrilSink,
+    tree_builder::TreeBuilderOpts,
 };
+use markup5ever::{Attribute, QualName};
+use markup5ever_arcdom::{ArcDom, Handle, NodeData, SerializableHandle};
 
 pub struct Document {
     doc: ArcDom,

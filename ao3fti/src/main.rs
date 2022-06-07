@@ -1,11 +1,10 @@
 mod verbose;
 
-use clap::{Parser, Subcommand, IntoApp as _, FromArgMatches as _};
+use ao3fti_common::Conf;
+use clap::{FromArgMatches as _, IntoApp as _, Parser, Subcommand};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 use twelf::Layer;
-
-use ao3fti_common::Conf;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -36,7 +35,7 @@ async fn main() -> Result<(), ao3fti_common::Report> {
         Layer::Json("ao3fti.json".into()),
         Layer::Toml("ao3fti.toml".into()),
         Layer::Env(Some("AO3FTI_".to_string())),
-        Layer::Clap(matches)
+        Layer::Clap(matches),
     ])?;
 
     let subscriber = Registry::default()

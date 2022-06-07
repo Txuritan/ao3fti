@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use ao3fti_common::{Conf, models::{Entity, Rating, Story}};
+use ao3fti_common::{
+    models::{Entity, Rating, Story},
+    Conf,
+};
 use dataloader::{cached::Loader, BatchFn};
 
 use sqlx::{migrate::Migrator, postgres::PgPoolOptions, Postgres, Transaction};
@@ -13,9 +16,7 @@ pub type PgTransaction<'l> = Transaction<'l, Postgres>;
 pub async fn init_database_connection(conf: &Conf) -> Result<PgPool, ao3fti_common::Report> {
     static MIGRATOR: Migrator = sqlx::migrate!();
 
-    let pool = PgPoolOptions::new()
-        .connect(&conf.database)
-        .await?;
+    let pool = PgPoolOptions::new().connect(&conf.database).await?;
 
     MIGRATOR.run(&pool).await?;
 
