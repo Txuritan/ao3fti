@@ -32,8 +32,6 @@ async fn main() -> Result<(), ao3fti_common::Report> {
     let matches = Cli::command().args(&Conf::clap_args()).get_matches();
     let cli = Cli::from_arg_matches(&matches)?;
     let conf = Conf::with_layers(&[
-        Layer::Json("ao3fti.json".into()),
-        Layer::Toml("ao3fti.toml".into()),
         Layer::Env(Some("AO3FTI_".to_string())),
         Layer::Clap(matches),
     ])?;

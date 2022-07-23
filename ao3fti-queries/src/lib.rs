@@ -6,7 +6,7 @@ use ao3fti_common::{
 };
 use dataloader::{cached::Loader, BatchFn};
 
-use sqlx::{migrate::Migrator, postgres::PgPoolOptions, Postgres, Transaction};
+use sqlx::{migrate::Migrator, postgres::PgPoolOptions, Connection, Postgres, Transaction};
 
 pub use sqlx::PgPool;
 
@@ -299,4 +299,46 @@ pub async fn get_story(pool: PgPool, loaders: &Loaders, story_id: u64) -> Result
         characters,
         generals,
     })
+}
+
+#[tracing::instrument(skip(pool, uris), err)]
+pub async fn queue_insert(pool: PgPool, uris: &[String]) -> Result<(), ao3fti_common::Report> {
+    let mut conn = pool.acquire().await?;
+    let mut trans = conn.begin().await?;
+
+    for uri in uris {
+        sqlx::query!("INSERT INTO page_queue(uri) VALUES ($1)", uri)
+            .execute(&mut trans)
+            .await?;
+    }
+
+    trans.commit().await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(pool), err)]
+pub async fn queue_next(pool: PgPool) -> Result<Option<String>, ao3fti_common::Report> {
+    let next =
+        sqlx::query!("SELECT uri FROM page_queue WHERE completed = FALSE ORDER BY created DESC")
+            .fetch_optional(&pool)
+            .await?;
+
+    Ok(next.map(|r| r.uri))
+}
+
+pub async fn queue_task(pool: PgPool) -> Result<(), ao3fti_common::Report> {
+    use tracing::Instrument as _;
+
+    async fn inner(pool: PgPool) -> Result<(), ao3fti_common::Report> {
+        loop {
+            if let Some(uri) = queue_next(pool.clone()).await? {
+                
+            }
+
+            ao3fti_common::utils::sleep().await?;
+        }
+    }
+
+    inner(pool).in_current_span().await
 }

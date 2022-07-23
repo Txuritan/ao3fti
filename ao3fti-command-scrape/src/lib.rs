@@ -1,5 +1,4 @@
 mod query;
-mod utils;
 
 use ao3fti_common::{
     channel::{self, Sender},
@@ -53,7 +52,7 @@ pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
 
             page_index += 1;
 
-            utils::sleep().instrument(span.clone()).await?;
+            ao3fti_common::utils::sleep().instrument(span.clone()).await?;
         }
 
         Ok(())
@@ -80,7 +79,7 @@ async fn scrape_page(
         "html > body > #outer > #inner > #main > ol.pagination.actions > li > a[rel=next]";
     static RESTRICTED_SELECTOR: &str = "div.header.module > h4.heading > img[alt=(Restricted)])";
 
-    let html = utils::req(page_url).await?;
+    let html = ao3fti_common::utils::req(page_url).await?;
 
     let doc = query::Document::try_from(html.as_str())?;
 
@@ -91,7 +90,7 @@ async fn scrape_page(
             continue;
         }
 
-        utils::sleep().instrument(Span::current()).await?;
+        ao3fti_common::utils::sleep().instrument(Span::current()).await?;
 
         let story_link_element = story_element
             .select(INFO_SELECTOR)
@@ -164,9 +163,9 @@ async fn scrape_story(
         .with_context(|| format!("with url, at line {}: `{}`", line!(), download_url))?;
     let download_url = rebuild_url(base_url, &download_url)?;
 
-    utils::sleep().instrument(Span::current()).await?;
+    ao3fti_common::utils::sleep().instrument(Span::current()).await?;
 
-    let download_html = utils::req(&download_url).await?;
+    let download_html = ao3fti_common::utils::req(&download_url).await?;
 
     let download_doc = query::Document::try_from(download_html.as_str())?;
 
@@ -206,7 +205,7 @@ async fn get_download_url(story_url: &Uri) -> Result<String, ao3fti_common::Repo
     static STORY_SINGLE_DOWNLOAD_BUTTON: &str =
         "html > body > #outer > #inner > #main > .work.navigation.actions > .download > ul > li > a";
 
-    let story_html = utils::req(story_url).await?;
+    let story_html = ao3fti_common::utils::req(story_url).await?;
 
     let doc = query::Document::try_from(story_html.as_str())?;
 

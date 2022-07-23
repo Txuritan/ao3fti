@@ -12,7 +12,6 @@ ao3fti-queries = { path = "../ao3fti-queries" }
 
 futures = "0.3"
 html5ever = "=0.26.0"
-isahc = "1.6"
 markup5ever = "=0.11"
 markup5ever_arcdom = "=0.1.2"
 rand = "0.8"

@@ -6,3 +6,6 @@ tasks:
       NODE_ENV: production
     cmds:
       - npx tailwindcss -c tailwind.config.js -i assets/src.css -o assets/dest.min.css --minify
+  run:
+    cmds:
+      - cargo run --release -- serve --database postgres://ao3fti:ao3fti@localhost:5432/ao3fti --username a --password b -vv

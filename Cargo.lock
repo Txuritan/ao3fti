@@ -62,7 +62,6 @@ dependencies = [
  "ao3fti-queries",
  "futures",
  "html5ever",
- "isahc",
  "markup5ever",
  "markup5ever_arcdom",
  "rand",
@@ -97,7 +96,10 @@ dependencies = [
  "color-eyre",
  "crossbeam-channel",
  "http",
+ "isahc",
+ "rand",
  "serde",
+ "tokio",
  "tracing",
  "twelf",
 ]
@@ -2686,7 +2688,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "toml",
 ]
 
 [[package]]

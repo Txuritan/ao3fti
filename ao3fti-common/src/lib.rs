@@ -1,5 +1,6 @@
 pub mod models;
 pub mod timer;
+pub mod utils;
 
 pub use color_eyre::{
     eyre::{bail, eyre as err, Context, Report},

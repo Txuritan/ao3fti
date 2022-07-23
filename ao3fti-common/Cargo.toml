@@ -9,6 +9,9 @@ workspace = ".."
 color-eyre = "0.6.1"
 crossbeam-channel = "0.5"
 http = "0.2"
+isahc = "1.6"
+rand = "0.8"
 serde = { version = "1.0", features = [ "derive" ] }
 tracing = "0.1"
+tokio = "1.14"
 twelf = { version = "0.5.0", default-features = false }
