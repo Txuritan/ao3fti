@@ -12,5 +12,5 @@ async-trait = "0.1"
 dataloader = { version = "0.15", default-features = false, features = [ "runtime-tokio" ] }
 serde = { version = "1.0", features = [ "derive" ] }
 serde_plain = "1.0"
-sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "sqlite", "macros", "migrate" ] }
+sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "sqlite", "macros", "migrate" ] }
 tracing = "0.1"

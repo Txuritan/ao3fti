@@ -16,4 +16,4 @@ tracing = "0.1"
 tracing-error = "0.2.0"
 tracing-subscriber = "0.3.11"
 tracing-tree = "0.2.1"
-twelf = { version = "0.5.0", default-features = false, features = [ "env", "clap" ] }
+twelf = { version = "0.7", default-features = false, features = [ "env", "clap" ] }
