@@ -4,7 +4,7 @@ use ao3fti_common::{models::Story, Conf};
 use ao3fti_indexer::{
     Hit, IndexServer, NamedFieldDocument, SearchQuery as ApiSearchQuery, Serp, Value,
 };
-use ao3fti_queries::{Loaders, PgPool};
+use ao3fti_queries::{Loaders, Pool};
 use askama::Template;
 use axum::{
     error_handling::HandleErrorLayer,
@@ -61,7 +61,7 @@ struct IndexPage {
     stories: i64,
 }
 
-async fn index(Extension(pool): Extension<PgPool>) -> Result<impl IntoResponse, Error> {
+async fn index(Extension(pool): Extension<Pool>) -> Result<impl IntoResponse, Error> {
     let count = ao3fti_queries::get_story_count(pool).await?;
 
     Ok(Html(
@@ -112,7 +112,7 @@ struct Search {
 }
 
 async fn search_html(
-    Extension(pool): Extension<PgPool>,
+    Extension(pool): Extension<Pool>,
     Extension(index): Extension<Arc<IndexServer>>,
     Query(search): Query<SearchQuery>,
 ) -> Result<impl IntoResponse, Error> {

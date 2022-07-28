@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS story_authors (
-    story_id SERIAL NOT NULL,
-    author_id SERIAL NOT NULL,
-    created TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    story_id INTEGER NOT NULL,
+    author_id INTEGER NOT NULL,
+    created DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'utc')),
     PRIMARY KEY (story_id, author_id)
 );

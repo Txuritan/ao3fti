@@ -2,4 +2,8 @@
 /node_modules
 /target
 
+ao3fti.db
+ao3fti.db-shm
+ao3fti.db-wal
+
 /*.html

@@ -7,7 +7,7 @@ use ao3fti_common::{
     Conf, Context as _, Report, Uri,
 };
 use ao3fti_indexer::ChapterLine;
-use ao3fti_queries::{Info, Meta, PgPool, PgTransaction};
+use ao3fti_queries::{Info, Meta, PgTransaction, Pool};
 use futures::future::TryFutureExt as _;
 use tracing::{Instrument as _, Span};
 
@@ -26,7 +26,7 @@ pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
 
     #[tracing::instrument(skip(pool, url, line_sender), err)]
     async fn inner(
-        pool: PgPool,
+        pool: Pool,
         url: &str,
         line_sender: Sender<ChapterLine>,
     ) -> Result<(), ao3fti_common::Report> {
@@ -52,7 +52,9 @@ pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
 
             page_index += 1;
 
-            ao3fti_common::utils::sleep().instrument(span.clone()).await?;
+            ao3fti_common::utils::sleep()
+                .instrument(span.clone())
+                .await?;
         }
 
         Ok(())
@@ -68,7 +70,7 @@ pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
 
 #[tracing::instrument(skip(pool, line_sender, base_url, page_url), err)]
 async fn scrape_page(
-    pool: PgPool,
+    pool: Pool,
     line_sender: &channel::Sender<ChapterLine>,
     base_url: &Uri,
     page_url: &Uri,
@@ -90,7 +92,9 @@ async fn scrape_page(
             continue;
         }
 
-        ao3fti_common::utils::sleep().instrument(Span::current()).await?;
+        ao3fti_common::utils::sleep()
+            .instrument(Span::current())
+            .await?;
 
         let story_link_element = story_element
             .select(INFO_SELECTOR)
@@ -163,7 +167,9 @@ async fn scrape_story(
         .with_context(|| format!("with url, at line {}: `{}`", line!(), download_url))?;
     let download_url = rebuild_url(base_url, &download_url)?;
 
-    ao3fti_common::utils::sleep().instrument(Span::current()).await?;
+    ao3fti_common::utils::sleep()
+        .instrument(Span::current())
+        .await?;
 
     let download_html = ao3fti_common::utils::req(&download_url).await?;
 

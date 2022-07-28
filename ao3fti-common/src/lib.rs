@@ -11,12 +11,11 @@ pub use http::Uri;
 
 #[twelf::config]
 pub struct Conf {
-    /// PostgreSQL connection URI
+    /// SQLite database path
+    #[serde(default = "default_database")]
     pub database: String,
+}
 
-    /// Your Archive Of Our Own username
-    pub username: Option<String>,
-
-    /// Your Archive Of Our Own password
-    pub password: Option<String>,
+fn default_database() -> String {
+    "ao3fti.db".to_string()
 }

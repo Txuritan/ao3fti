@@ -6,17 +6,17 @@ use ao3fti_common::{
 };
 use dataloader::{cached::Loader, BatchFn};
 
-use sqlx::{migrate::Migrator, postgres::PgPoolOptions, Connection, Postgres, Transaction};
+use sqlx::{migrate::Migrator, sqlite::SqlitePoolOptions, Connection, Sqlite, Transaction};
 
-pub use sqlx::PgPool;
+pub use sqlx::SqlitePool as Pool;
 
-pub type PgTransaction<'l> = Transaction<'l, Postgres>;
+pub type PgTransaction<'l> = Transaction<'l, Sqlite>;
 
 #[tracing::instrument(skip(conf), err)]
-pub async fn init_database_connection(conf: &Conf) -> Result<PgPool, ao3fti_common::Report> {
+pub async fn init_database_connection(conf: &Conf) -> Result<Pool, ao3fti_common::Report> {
     static MIGRATOR: Migrator = sqlx::migrate!();
 
-    let pool = PgPoolOptions::new().connect(&conf.database).await?;
+    let pool = SqlitePoolOptions::new().connect(&conf.database).await?;
 
     MIGRATOR.run(&pool).await?;
 
@@ -25,36 +25,34 @@ pub async fn init_database_connection(conf: &Conf) -> Result<PgPool, ao3fti_comm
 
 #[tracing::instrument(skip(trans), err)]
 pub async fn check_story_if_exists(
-    trans: &mut Transaction<'_, Postgres>,
+    trans: &mut Transaction<'_, Sqlite>,
     story_id: usize,
 ) -> Result<bool, ao3fti_common::Report> {
-    let existing = sqlx::query!("SELECT id FROM stories WHERE id = $1", story_id as i32)
+    let story_id = story_id as i64;
+    let existing = sqlx::query!("SELECT id FROM stories WHERE id = ?", story_id)
         .fetch_optional(&mut *trans)
         .await?;
 
     Ok(existing.is_some())
 }
 
-pub async fn get_story_count(pool: PgPool) -> Result<i64, ao3fti_common::Report> {
+pub async fn get_story_count(pool: Pool) -> Result<i64, ao3fti_common::Report> {
     struct Count {
-        estimate: Option<i64>,
+        estimate: i32,
     }
 
-    let count = sqlx::query_as!(
-        Count,
-        "SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'stories';"
-    )
-    .fetch_one(&pool)
-    .await?;
+    let count = sqlx::query_as!(Count, "SELECT COUNT(1) as estimate FROM stories;")
+        .fetch_one(&pool)
+        .await?;
 
-    Ok(count.estimate.unwrap_or_default())
+    Ok(count.estimate as i64)
 }
 
 macro_rules! get_or_create {
     ($fn_name:ident, $select:expr, $insert:expr) => {
         #[tracing::instrument(skip(trans), err)]
         pub async fn $fn_name(
-            trans: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+            trans: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
             name: &str,
         ) -> Result<i32, ao3fti_common::Report> {
             let find = sqlx::query!($select, name)
@@ -64,7 +62,7 @@ macro_rules! get_or_create {
             if let Some(record) = find {
                 tracing::debug!("found existing entity");
 
-                Ok(record.id)
+                Ok(record.id as i32)
             } else {
                 tracing::debug!("creating entity");
 
@@ -72,7 +70,7 @@ macro_rules! get_or_create {
 
                 let record = sqlx::query!($select, name).fetch_one(&mut *trans).await?;
 
-                Ok(record.id)
+                Ok(record.id as i32)
             }
         }
     };
@@ -80,38 +78,38 @@ macro_rules! get_or_create {
 
 get_or_create!(
     get_or_create_author,
-    "SELECT id FROM authors WHERE name = $1",
-    "INSERT INTO authors(name) VALUES ($1)"
+    "SELECT id FROM authors WHERE name = ?",
+    "INSERT INTO authors(name) VALUES (?)"
 );
 
 get_or_create!(
     get_or_create_origin,
-    "SELECT id FROM origins WHERE name = $1",
-    "INSERT INTO origins(name) VALUES ($1)"
+    "SELECT id FROM origins WHERE name = ?",
+    "INSERT INTO origins(name) VALUES (?)"
 );
 
 get_or_create!(
     get_or_create_warning,
-    "SELECT id FROM warnings WHERE name = $1",
-    "INSERT INTO warnings(name) VALUES ($1)"
+    "SELECT id FROM warnings WHERE name = ?",
+    "INSERT INTO warnings(name) VALUES (?)"
 );
 
 get_or_create!(
     get_or_create_pairing,
-    "SELECT id FROM pairings WHERE name = $1",
-    "INSERT INTO pairings(name) VALUES ($1)"
+    "SELECT id FROM pairings WHERE name = ?",
+    "INSERT INTO pairings(name) VALUES (?)"
 );
 
 get_or_create!(
     get_or_create_character,
-    "SELECT id FROM characters WHERE name = $1",
-    "INSERT INTO characters(name) VALUES ($1)"
+    "SELECT id FROM characters WHERE name = ?",
+    "INSERT INTO characters(name) VALUES (?)"
 );
 
 get_or_create!(
     get_or_create_general,
-    "SELECT id FROM generals WHERE name = $1",
-    "INSERT INTO generals(name) VALUES ($1)"
+    "SELECT id FROM generals WHERE name = ?",
+    "INSERT INTO generals(name) VALUES (?)"
 );
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -142,7 +140,8 @@ macro_rules! for_tag {
 
                 tracing::debug!(story_id = %$story_id, entity_id = %id, "linking entity to story");
 
-                sqlx::query!($insert, $story_id as i32, id)
+                let story_id = $story_id as i32;
+                sqlx::query!($insert, story_id, id)
                     .execute(&mut *$pool)
                     .await?;
             }
@@ -152,33 +151,35 @@ macro_rules! for_tag {
 
 #[tracing::instrument(skip(trans, info, meta), err)]
 pub async fn insert_story(
-    trans: &mut Transaction<'_, Postgres>,
+    trans: &mut Transaction<'_, Sqlite>,
     story_id: usize,
     info: Info,
     meta: Meta,
 ) -> Result<bool, ao3fti_common::Report> {
+    let story_id = story_id as i32;
+    let rating = serde_plain::to_string(&meta.rating).unwrap();
     sqlx::query!(
-        "INSERT INTO stories(id, name, summary, rating) VALUES ($1, $2, $3, $4)",
-        story_id as i32,
+        "INSERT INTO stories(id, name, summary, rating) VALUES (?, ?, ?, ?)",
+        story_id,
         info.name,
         info.summary,
-        serde_plain::to_string(&meta.rating).unwrap(),
+        rating,
     )
     .execute(&mut *trans)
     .await?;
 
     #[rustfmt::skip]
     for_tag!(trans, story_id, [
-        info.authors => (get_or_create_author, "INSERT INTO story_authors(story_id, author_id) VALUES ($1, $2)");
+        info.authors => (get_or_create_author, "INSERT INTO story_authors(story_id, author_id) VALUES (?, ?)");
     ]);
 
     #[rustfmt::skip]
     for_tag!(trans, story_id, [
-        meta.origins => (get_or_create_origin, "INSERT INTO story_origins(story_id, origin_id) VALUES ($1, $2)");
-        meta.warnings => (get_or_create_warning, "INSERT INTO story_warnings(story_id, warning_id) VALUES ($1, $2)");
-        meta.pairings => (get_or_create_pairing, "INSERT INTO story_pairings(story_id, pairing_id) VALUES ($1, $2)");
-        meta.characters => (get_or_create_character, "INSERT INTO story_characters(story_id, character_id) VALUES ($1, $2)");
-        meta.generals => (get_or_create_general, "INSERT INTO story_generals(story_id, general_id) VALUES ($1, $2)");
+        meta.origins => (get_or_create_origin, "INSERT INTO story_origins(story_id, origin_id) VALUES (?, ?)");
+        meta.warnings => (get_or_create_warning, "INSERT INTO story_warnings(story_id, warning_id) VALUES (?, ?)");
+        meta.pairings => (get_or_create_pairing, "INSERT INTO story_pairings(story_id, pairing_id) VALUES (?, ?)");
+        meta.characters => (get_or_create_character, "INSERT INTO story_characters(story_id, character_id) VALUES (?, ?)");
+        meta.generals => (get_or_create_general, "INSERT INTO story_generals(story_id, general_id) VALUES (?, ?)");
     ]);
 
     Ok(false)
@@ -187,54 +188,38 @@ pub async fn insert_story(
 macro_rules! loader {
     ($name:ident, $select:expr) => {
         struct $name {
-            pool: PgPool,
+            pool: Pool,
         }
 
         #[async_trait::async_trait]
         impl BatchFn<i32, Entity> for $name {
             #[tracing::instrument(skip(self))]
             async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Entity> {
-                match sqlx::query!($select, keys).fetch_all(&self.pool).await {
-                    Ok(entities) => keys
-                        .iter()
-                        .copied()
-                        .zip(entities.into_iter().map(|r| Entity { name: r.name }))
-                        .collect(),
-                    Err(err) => {
-                        tracing::error!(err = ?err, "unable to load entities");
+                let mut entries = HashMap::new();
+                for key in keys {
+                    match sqlx::query!($select, key).fetch_one(&self.pool).await {
+                        Ok(entity) => {
+                            entries.insert(*key, Entity { name: entity.name });
+                        },
+                        Err(err) => {
+                            tracing::error!(err = ?err, "unable to load entities");
 
-                        HashMap::new()
+                            return HashMap::new();
+                        }
                     }
                 }
+                entries
             }
         }
     }
 }
 
-loader!(
-    AuthorLoader,
-    "SELECT name FROM authors WHERE id = ANY($1::INT[])"
-);
-loader!(
-    OriginLoader,
-    "SELECT name FROM origins WHERE id = ANY($1::INT[])"
-);
-loader!(
-    WarningLoader,
-    "SELECT name FROM warnings WHERE id = ANY($1::INT[])"
-);
-loader!(
-    PairingLoader,
-    "SELECT name FROM pairings WHERE id = ANY($1::INT[])"
-);
-loader!(
-    CharacterLoader,
-    "SELECT name FROM characters WHERE id = ANY($1::INT[])"
-);
-loader!(
-    GeneralLoader,
-    "SELECT name FROM generals WHERE id = ANY($1::INT[])"
-);
+loader!(AuthorLoader, "SELECT name FROM authors WHERE id = ?");
+loader!(OriginLoader, "SELECT name FROM origins WHERE id = ?");
+loader!(WarningLoader, "SELECT name FROM warnings WHERE id = ?");
+loader!(PairingLoader, "SELECT name FROM pairings WHERE id = ?");
+loader!(CharacterLoader, "SELECT name FROM characters WHERE id = ?");
+loader!(GeneralLoader, "SELECT name FROM generals WHERE id = ?");
 
 pub struct Loaders {
     author: Loader<i32, Entity, AuthorLoader>,
@@ -246,7 +231,7 @@ pub struct Loaders {
 }
 
 impl Loaders {
-    pub fn new(pool: PgPool) -> Self {
+    pub fn new(pool: Pool) -> Self {
         Self {
             author: Loader::new(AuthorLoader { pool: pool.clone() }),
             origin: Loader::new(OriginLoader { pool: pool.clone() }),
@@ -262,7 +247,10 @@ macro_rules! load {
     ($pool:ident, $loaders:ident . $loader:ident, $query:expr, $id:expr) => {{
         let id_records = sqlx::query!($query, $id).fetch_all(&$pool).await?;
 
-        let ids = id_records.into_iter().map(|r| r.id).collect::<Vec<i32>>();
+        let ids = id_records
+            .into_iter()
+            .map(|r| r.id as i32)
+            .collect::<Vec<i32>>();
 
         let mut entities: HashMap<i32, Entity> = $loaders.$loader.load_many(ids.clone()).await;
 
@@ -276,17 +264,17 @@ macro_rules! load {
 
 #[rustfmt::skip]
 #[tracing::instrument(skip(pool, loaders), err)]
-pub async fn get_story(pool: PgPool, loaders: &Loaders, story_id: u64) -> Result<Story, ao3fti_common::Report> {
+pub async fn get_story(pool: Pool, loaders: &Loaders, story_id: u64) -> Result<Story, ao3fti_common::Report> {
     let id = story_id as i32;
 
-    let story = sqlx::query!("SELECT name, summary, rating FROM stories WHERE id = $1", id).fetch_one(&pool).await?;
+    let story = sqlx::query!("SELECT name, summary, rating FROM stories WHERE id = ?", id).fetch_one(&pool).await?;
 
-    let authors = load!(pool, loaders.author, "SELECT author_id as id FROM story_authors WHERE story_id = $1 ORDER BY created DESC", id);
-    let origins = load!(pool, loaders.origin, "SELECT origin_id as id FROM story_origins WHERE story_id = $1 ORDER BY created DESC", id);
-    let warnings = load!(pool, loaders.warning, "SELECT warning_id as id FROM story_warnings WHERE story_id = $1 ORDER BY created DESC", id);
-    let pairings = load!(pool, loaders.pairing, "SELECT pairing_id as id FROM story_pairings WHERE story_id = $1 ORDER BY created DESC", id);
-    let characters = load!(pool, loaders.character, "SELECT character_id as id FROM story_characters WHERE story_id = $1 ORDER BY created DESC", id);
-    let generals = load!(pool, loaders.general, "SELECT general_id as id FROM story_generals WHERE story_id = $1 ORDER BY created DESC", id);
+    let authors = load!(pool, loaders.author, "SELECT author_id as id FROM story_authors WHERE story_id = ? ORDER BY created DESC", id);
+    let origins = load!(pool, loaders.origin, "SELECT origin_id as id FROM story_origins WHERE story_id = ? ORDER BY created DESC", id);
+    let warnings = load!(pool, loaders.warning, "SELECT warning_id as id FROM story_warnings WHERE story_id = ? ORDER BY created DESC", id);
+    let pairings = load!(pool, loaders.pairing, "SELECT pairing_id as id FROM story_pairings WHERE story_id = ? ORDER BY created DESC", id);
+    let characters = load!(pool, loaders.character, "SELECT character_id as id FROM story_characters WHERE story_id = ? ORDER BY created DESC", id);
+    let generals = load!(pool, loaders.general, "SELECT general_id as id FROM story_generals WHERE story_id = ? ORDER BY created DESC", id);
 
     Ok(Story {
         id: id as usize,
@@ -302,12 +290,12 @@ pub async fn get_story(pool: PgPool, loaders: &Loaders, story_id: u64) -> Result
 }
 
 #[tracing::instrument(skip(pool, uris), err)]
-pub async fn queue_insert(pool: PgPool, uris: &[String]) -> Result<(), ao3fti_common::Report> {
+pub async fn queue_insert(pool: Pool, uris: &[String]) -> Result<(), ao3fti_common::Report> {
     let mut conn = pool.acquire().await?;
     let mut trans = conn.begin().await?;
 
     for uri in uris {
-        sqlx::query!("INSERT INTO page_queue(uri) VALUES ($1)", uri)
+        sqlx::query!("INSERT INTO page_queue(uri) VALUES (?)", uri)
             .execute(&mut trans)
             .await?;
     }
@@ -318,7 +306,7 @@ pub async fn queue_insert(pool: PgPool, uris: &[String]) -> Result<(), ao3fti_co
 }
 
 #[tracing::instrument(skip(pool), err)]
-pub async fn queue_next(pool: PgPool) -> Result<Option<String>, ao3fti_common::Report> {
+pub async fn queue_next(pool: Pool) -> Result<Option<String>, ao3fti_common::Report> {
     let next =
         sqlx::query!("SELECT uri FROM page_queue WHERE completed = FALSE ORDER BY created DESC")
             .fetch_optional(&pool)
@@ -327,14 +315,13 @@ pub async fn queue_next(pool: PgPool) -> Result<Option<String>, ao3fti_common::R
     Ok(next.map(|r| r.uri))
 }
 
-pub async fn queue_task(pool: PgPool) -> Result<(), ao3fti_common::Report> {
+// https://github.com/ayrat555/fang
+pub async fn queue_task(pool: Pool) -> Result<(), ao3fti_common::Report> {
     use tracing::Instrument as _;
 
-    async fn inner(pool: PgPool) -> Result<(), ao3fti_common::Report> {
+    async fn inner(pool: Pool) -> Result<(), ao3fti_common::Report> {
         loop {
-            if let Some(uri) = queue_next(pool.clone()).await? {
-                
-            }
+            if let Some(_uri) = queue_next(pool.clone()).await? {}
 
             ao3fti_common::utils::sleep().await?;
         }
