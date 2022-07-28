@@ -196,6 +196,8 @@ macro_rules! loader {
             #[tracing::instrument(skip(self))]
             async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Entity> {
                 let mut entries = HashMap::new();
+                // ISSUE: https://github.com/launchbadge/sqlx/issues/656
+                // ISSUE: https://github.com/launchbadge/sqlx/issues/875
                 for key in keys {
                     match sqlx::query!($select, key).fetch_one(&self.pool).await {
                         Ok(entity) => {
