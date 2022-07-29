@@ -1,26 +1,28 @@
 mod query;
 
+use std::sync::Arc;
+
 use ao3fti_common::{
     channel::{self, Sender},
     err,
     models::Rating,
     Conf, Context as _, Report, Uri,
 };
-use ao3fti_indexer::ChapterLine;
+use ao3fti_indexer::StoryData;
 use ao3fti_queries::{Info, Meta, PgTransaction, Pool};
 use futures::future::TryFutureExt as _;
 use tracing::{Instrument as _, Span};
 
 #[tracing::instrument(skip(conf, url), err)]
-pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
-    let pool = ao3fti_queries::init_database_connection(conf).await?;
+pub async fn run(conf: Arc<Conf>, url: &str) -> Result<(), ao3fti_common::Report> {
+    let pool = ao3fti_queries::init_database_connection(conf.clone()).await?;
 
     let (line_sender, line_receiver) = channel::bounded(10_000);
 
     let background_worker = tokio::task::spawn_blocking({
         let span = Span::current();
 
-        move || span.in_scope(|| ao3fti_indexer::index(line_receiver))
+        move || span.in_scope(|| ao3fti_indexer::index(conf.clone(), line_receiver))
     })
     .map_err(Report::from);
 
@@ -28,7 +30,7 @@ pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
     async fn inner(
         pool: Pool,
         url: &str,
-        line_sender: Sender<ChapterLine>,
+        line_sender: Sender<StoryData>,
     ) -> Result<(), ao3fti_common::Report> {
         let base_url = Uri::try_from(url)
             .with_context(|| format!("with url, at line {}: `{}`", line!(), url))?;
@@ -71,7 +73,7 @@ pub async fn run(conf: &Conf, url: &str) -> Result<(), ao3fti_common::Report> {
 #[tracing::instrument(skip(pool, line_sender, base_url, page_url), err)]
 async fn scrape_page(
     pool: Pool,
-    line_sender: &channel::Sender<ChapterLine>,
+    line_sender: &channel::Sender<StoryData>,
     base_url: &Uri,
     page_url: &Uri,
 ) -> Result<Option<Uri>, ao3fti_common::Report> {
@@ -140,7 +142,7 @@ async fn scrape_page(
 #[tracing::instrument(skip(trans, line_sender, base_url, story_url), fields(story_url = %story_url.to_string()), err)]
 async fn scrape_story(
     trans: &mut PgTransaction<'_>,
-    line_sender: &channel::Sender<ChapterLine>,
+    line_sender: &channel::Sender<StoryData>,
     base_url: &Uri,
     story_url: &Uri,
 ) -> Result<(), ao3fti_common::Report> {
@@ -183,6 +185,8 @@ async fn scrape_story(
         return Ok(());
     }
 
+    let mut content_buffer = String::with_capacity(download_html.len());
+
     for (chapter_id, chapter) in download_doc
         .select(CHAPTERS_SELECTOR)
         .into_iter()
@@ -191,15 +195,15 @@ async fn scrape_story(
         tracing::debug!(story_id = %story_id, chapter_number = %chapter_id, "indexing chapter");
 
         let chapter_content = chapter.text().unwrap();
-
-        line_sender
-            .send(ChapterLine {
-                story_id,
-                chapter_id,
-                chapter_content,
-            })
-            .context("error sending chapter to indexer")?;
+        content_buffer.push_str(&chapter_content);
     }
+
+    line_sender
+        .send(StoryData {
+            id: story_id,
+            contents: content_buffer,
+        })
+        .context("error sending chapter to indexer")?;
 
     Ok(())
 }

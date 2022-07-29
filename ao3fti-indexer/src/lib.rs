@@ -3,32 +3,52 @@ use std::sync::Arc;
 use ao3fti_common::{
     channel::{self, Receiver},
     timer::TimerTree,
+    Conf,
 };
 use tantivy::{
     collector::{Count, TopDocs},
     query::QueryParser,
-    schema::{Field, FieldType, Schema},
+    schema::{Field, FieldType, Schema, FAST, STORED, TEXT},
     Document, Index, IndexReader, IndexWriter, Score,
 };
 
 pub use tantivy::schema::{NamedFieldDocument, Value};
 
 #[derive(serde::Deserialize, serde::Serialize)]
-pub struct ChapterLine {
-    pub story_id: usize,
-    pub chapter_id: usize,
-    pub chapter_content: String,
+pub struct StoryData {
+    pub id: usize,
+    pub contents: String,
 }
 
-#[tracing::instrument(skip(line_receiver), err)]
-pub fn index(line_receiver: Receiver<ChapterLine>) -> Result<(), ao3fti_common::Report> {
+#[tracing::instrument(skip(conf, line_receiver), err)]
+pub fn index(
+    conf: Arc<Conf>,
+    line_receiver: Receiver<StoryData>,
+) -> Result<(), ao3fti_common::Report> {
     let num_threads = 3;
     let memory_size = 1000000000;
     let buffer_size_per_thread = memory_size / num_threads;
 
     let (doc_sender, doc_receiver) = channel::bounded(10_000);
 
-    let index = Index::open_in_dir("./chapter-index")?;
+    let data_path = conf.index.as_path();
+    if !data_path.exists() {
+        tracing::debug!(path = %data_path.display(), "creating index directory");
+        std::fs::create_dir_all(&data_path)?;
+    }
+    let index = if std::fs::read_dir(data_path)?.next().is_none() {
+        tracing::debug!(path = %data_path.display(), "initializing index directory with default schema");
+
+        let mut schema_builder = Schema::builder();
+        schema_builder.add_u64_field("id", FAST | STORED);
+        schema_builder.add_text_field("contents", TEXT);
+        let schema = schema_builder.build();
+
+        Index::create_in_dir(data_path, schema)?
+    } else {
+        Index::open_in_dir(data_path)?
+    };
+
     let schema = index.schema();
 
     let num_threads_to_parse_json = std::cmp::max(1, num_threads / 4);

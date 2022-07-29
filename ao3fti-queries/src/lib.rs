@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use ao3fti_common::{
     models::{Entity, Rating, Story},
@@ -13,7 +13,7 @@ pub use sqlx::SqlitePool as Pool;
 pub type PgTransaction<'l> = Transaction<'l, Sqlite>;
 
 #[tracing::instrument(skip(conf), err)]
-pub async fn init_database_connection(conf: &Conf) -> Result<Pool, ao3fti_common::Report> {
+pub async fn init_database_connection(conf: Arc<Conf>) -> Result<Pool, ao3fti_common::Report> {
     static MIGRATOR: Migrator = sqlx::migrate!();
 
     let pool = SqlitePoolOptions::new().connect(&conf.database).await?;
@@ -271,6 +271,7 @@ pub async fn get_story(pool: Pool, loaders: &Loaders, story_id: u64) -> Result<S
 
     let story = sqlx::query!("SELECT name, summary, rating FROM stories WHERE id = ?", id).fetch_one(&pool).await?;
 
+    // TODO: these queries can be inlined into the loader itself, avoiding the need for the id/key loop
     let authors = load!(pool, loaders.author, "SELECT author_id as id FROM story_authors WHERE story_id = ? ORDER BY created DESC", id);
     let origins = load!(pool, loaders.origin, "SELECT origin_id as id FROM story_origins WHERE story_id = ? ORDER BY created DESC", id);
     let warnings = load!(pool, loaders.warning, "SELECT warning_id as id FROM story_warnings WHERE story_id = ? ORDER BY created DESC", id);

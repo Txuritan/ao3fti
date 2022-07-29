@@ -88,7 +88,10 @@
                 </div>
                 <div class="flex-inital flex items-center justify-center md:items-stretch md:justify-start">
                     <div class="hidden md:block md:ml-3">
-                        <input type="text" class="border-0 text-white bg-stone-700 px-2 py-1 rounded" placeholder="search" value="{{ query }}">
+                        <form action="/search" method="get">
+                            <input type="text" class="border-0 text-white bg-stone-700 px-2 py-1 rounded" placeholder="search" value="{{ query }}">
+                            <input type="number" class="hidden" name="page" id="page" value="1" hidden>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -98,7 +101,10 @@
         <div id="mobile-menu" class="hidden">
             <div class="px-2 pt-2 pb-3 space-y-1">
                 <div class="flex flex-col">
-                    <input type="text" class="border-0 text-white bg-stone-700 px-3 py-1 rounded w-full" placeholder="search" value="{{ query }}">
+                    <form action="/search" method="get">
+                        <input type="text" class="border-0 text-white bg-stone-700 px-3 py-1 rounded w-full" placeholder="search" value="{{ query }}">
+                        <input type="number" class="hidden" name="page" id="page" value="1" hidden>
+                    </form>
                 </div>
             </div>
         </div>

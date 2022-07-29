@@ -1,5 +1,7 @@
 mod verbose;
 
+use std::sync::Arc;
+
 use ao3fti_common::Conf;
 use clap::{FromArgMatches as _, IntoApp as _, Parser, Subcommand};
 use tracing_error::ErrorLayer;
@@ -35,6 +37,7 @@ async fn main() -> Result<(), ao3fti_common::Report> {
         Layer::Env(Some("AO3FTI_".to_string())),
         Layer::Clap(matches),
     ])?;
+    let conf = Arc::new(conf);
 
     let subscriber = Registry::default()
         .with(ErrorLayer::default())
@@ -44,8 +47,8 @@ async fn main() -> Result<(), ao3fti_common::Report> {
     tracing::subscriber::set_global_default(subscriber)?;
 
     match cli.command {
-        Commands::Scrape { url } => ao3fti_command_scrape::run(&conf, &url).await?,
-        Commands::Serve => ao3fti_command_serve::run(&conf).await?,
+        Commands::Scrape { url } => ao3fti_command_scrape::run(conf, &url).await?,
+        Commands::Serve => ao3fti_command_serve::run(conf).await?,
     }
 
     Ok(())

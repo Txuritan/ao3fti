@@ -17,8 +17,8 @@ use axum::{
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
-pub async fn run(conf: &Conf) -> Result<(), ao3fti_common::Report> {
-    let pool = ao3fti_queries::init_database_connection(conf).await?;
+pub async fn run(conf: Arc<Conf>) -> Result<(), ao3fti_common::Report> {
+    let pool = ao3fti_queries::init_database_connection(conf.clone()).await?;
     let index_server = IndexServer::new()?;
 
     let app: _ = Router::new()
