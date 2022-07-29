@@ -4,7 +4,7 @@ use ao3fti_common::{models::Story, Conf};
 use ao3fti_indexer::{
     Hit, IndexServer, NamedFieldDocument, SearchQuery as ApiSearchQuery, Serp, Value,
 };
-use ao3fti_queries::{Loaders, Pool};
+use ao3fti_queries::Pool;
 use askama::Template;
 use axum::{
     error_handling::HandleErrorLayer,
@@ -134,7 +134,6 @@ async fn search_html(
         Err(err) => return Err(Error::from_any(err)),
     };
 
-    let loaders = Loaders::new(pool.clone());
     let mut stories = Vec::with_capacity(hits.len());
 
     for Hit {
@@ -144,7 +143,7 @@ async fn search_html(
     {
         let story_id_value = map.get("story_id").and_then(|l| l.iter().next());
         if let Some(Value::U64(story_id)) = story_id_value {
-            stories.push(ao3fti_queries::get_story(pool.clone(), &loaders, *story_id).await?);
+            stories.push(ao3fti_queries::get_story(pool.clone(), *story_id).await?);
         }
     }
 

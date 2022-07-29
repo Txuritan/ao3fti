@@ -1,10 +1,9 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use ao3fti_common::{
     models::{Entity, Rating, Story},
     Conf,
 };
-use dataloader::{cached::Loader, BatchFn};
 
 use sqlx::{migrate::Migrator, sqlite::SqlitePoolOptions, Connection, Sqlite, Transaction};
 
@@ -185,99 +184,31 @@ pub async fn insert_story(
     Ok(false)
 }
 
-macro_rules! loader {
-    ($name:ident, $select:expr) => {
-        struct $name {
-            pool: Pool,
-        }
-
-        #[async_trait::async_trait]
-        impl BatchFn<i32, Entity> for $name {
-            #[tracing::instrument(skip(self))]
-            async fn load(&mut self, keys: &[i32]) -> HashMap<i32, Entity> {
-                let mut entries = HashMap::new();
-                // ISSUE: https://github.com/launchbadge/sqlx/issues/656
-                // ISSUE: https://github.com/launchbadge/sqlx/issues/875
-                for key in keys {
-                    match sqlx::query!($select, key).fetch_one(&self.pool).await {
-                        Ok(entity) => {
-                            entries.insert(*key, Entity { name: entity.name });
-                        },
-                        Err(err) => {
-                            tracing::error!(err = ?err, "unable to load entities");
-
-                            return HashMap::new();
-                        }
-                    }
-                }
-                entries
-            }
-        }
-    }
-}
-
-loader!(AuthorLoader, "SELECT name FROM authors WHERE id = ?");
-loader!(OriginLoader, "SELECT name FROM origins WHERE id = ?");
-loader!(WarningLoader, "SELECT name FROM warnings WHERE id = ?");
-loader!(PairingLoader, "SELECT name FROM pairings WHERE id = ?");
-loader!(CharacterLoader, "SELECT name FROM characters WHERE id = ?");
-loader!(GeneralLoader, "SELECT name FROM generals WHERE id = ?");
-
-pub struct Loaders {
-    author: Loader<i32, Entity, AuthorLoader>,
-    origin: Loader<i32, Entity, OriginLoader>,
-    warning: Loader<i32, Entity, WarningLoader>,
-    pairing: Loader<i32, Entity, PairingLoader>,
-    character: Loader<i32, Entity, CharacterLoader>,
-    general: Loader<i32, Entity, GeneralLoader>,
-}
-
-impl Loaders {
-    pub fn new(pool: Pool) -> Self {
-        Self {
-            author: Loader::new(AuthorLoader { pool: pool.clone() }),
-            origin: Loader::new(OriginLoader { pool: pool.clone() }),
-            warning: Loader::new(WarningLoader { pool: pool.clone() }),
-            pairing: Loader::new(PairingLoader { pool: pool.clone() }),
-            character: Loader::new(CharacterLoader { pool: pool.clone() }),
-            general: Loader::new(GeneralLoader { pool }),
-        }
-    }
-}
-
-macro_rules! load {
-    ($pool:ident, $loaders:ident . $loader:ident, $query:expr, $id:expr) => {{
-        let id_records = sqlx::query!($query, $id).fetch_all(&$pool).await?;
-
-        let ids = id_records
-            .into_iter()
-            .map(|r| r.id as i32)
-            .collect::<Vec<i32>>();
-
-        let mut entities: HashMap<i32, Entity> = $loaders.$loader.load_many(ids.clone()).await;
-
-        let mut collected = Vec::with_capacity(ids.len());
-        for id in ids {
-            collected.push(entities.remove(&id).unwrap());
-        }
-        collected
-    }};
-}
-
 #[rustfmt::skip]
-#[tracing::instrument(skip(pool, loaders), err)]
-pub async fn get_story(pool: Pool, loaders: &Loaders, story_id: u64) -> Result<Story, ao3fti_common::Report> {
+#[tracing::instrument(skip(pool), err)]
+pub async fn get_story(pool: Pool, story_id: u64) -> Result<Story, ao3fti_common::Report> {
     let id = story_id as i32;
 
     let story = sqlx::query!("SELECT name, summary, rating FROM stories WHERE id = ?", id).fetch_one(&pool).await?;
 
-    // TODO: these queries can be inlined into the loader itself, avoiding the need for the id/key loop
-    let authors = load!(pool, loaders.author, "SELECT author_id as id FROM story_authors WHERE story_id = ? ORDER BY created DESC", id);
-    let origins = load!(pool, loaders.origin, "SELECT origin_id as id FROM story_origins WHERE story_id = ? ORDER BY created DESC", id);
-    let warnings = load!(pool, loaders.warning, "SELECT warning_id as id FROM story_warnings WHERE story_id = ? ORDER BY created DESC", id);
-    let pairings = load!(pool, loaders.pairing, "SELECT pairing_id as id FROM story_pairings WHERE story_id = ? ORDER BY created DESC", id);
-    let characters = load!(pool, loaders.character, "SELECT character_id as id FROM story_characters WHERE story_id = ? ORDER BY created DESC", id);
-    let generals = load!(pool, loaders.general, "SELECT general_id as id FROM story_generals WHERE story_id = ? ORDER BY created DESC", id);
+    let authors: Vec<Entity> = sqlx::query_as!(Entity, "SELECT name FROM authors WHERE id IN (SELECT author_id as id FROM story_authors WHERE story_id = ? ORDER BY created DESC)", id)
+        .fetch_all(&pool)
+        .await?;
+    let origins: Vec<Entity> = sqlx::query_as!(Entity, "SELECT name FROM origins WHERE id IN (SELECT origin_id as id FROM story_origins WHERE story_id = ? ORDER BY created DESC)", id)
+        .fetch_all(&pool)
+        .await?;
+    let warnings: Vec<Entity> = sqlx::query_as!(Entity, "SELECT name FROM warnings WHERE id IN (SELECT warning_id as id FROM story_warnings WHERE story_id = ? ORDER BY created DESC)", id)
+        .fetch_all(&pool)
+        .await?;
+    let pairings: Vec<Entity> = sqlx::query_as!(Entity, "SELECT name FROM pairings WHERE id IN (SELECT pairing_id as id FROM story_pairings WHERE story_id = ? ORDER BY created DESC)", id)
+        .fetch_all(&pool)
+        .await?;
+    let characters: Vec<Entity> = sqlx::query_as!(Entity, "SELECT name FROM characters WHERE id IN (SELECT character_id as id FROM story_characters WHERE story_id = ? ORDER BY created DESC)", id)
+        .fetch_all(&pool)
+        .await?;
+    let generals: Vec<Entity> = sqlx::query_as!(Entity, "SELECT name FROM generals WHERE id IN (SELECT general_id as id FROM story_generals WHERE story_id = ? ORDER BY created DESC)", id)
+        .fetch_all(&pool)
+        .await?;
 
     Ok(Story {
         id: id as usize,

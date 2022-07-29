@@ -121,7 +121,6 @@ version = "0.1.0"
 dependencies = [
  "ao3fti-common",
  "async-trait",
- "dataloader",
  "serde",
  "serde_plain",
  "sqlx",
@@ -601,16 +600,6 @@ dependencies = [
  "pkg-config",
  "vcpkg",
  "winapi",
-]
-
-[[package]]
-name = "dataloader"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9aa4240e00a8a3341eaffbb37780ac1450040c8dc72c78b7616ec5f12c91faf7"
-dependencies = [
- "async-trait",
- "tokio",
 ]
 
 [[package]]
