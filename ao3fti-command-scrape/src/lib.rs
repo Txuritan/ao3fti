@@ -1,6 +1,6 @@
 mod query;
 
-use std::sync::Arc;
+use std::{fmt::Write as _, sync::Arc};
 
 use ao3fti_common::{
     channel::{self, Sender},
@@ -177,15 +177,46 @@ async fn scrape_story(
 
     let download_doc = query::Document::try_from(download_html.as_str())?;
 
+    let mut content_buffer = String::with_capacity(download_html.len());
+    fn write(buffer: &mut String, typ: &str, entry: &str) -> Result<(), ao3fti_common::Report> {
+        if entry.contains(char::is_whitespace) {
+            writeln!(buffer, "{}:\"{}\"", typ, entry)?;
+        } else {
+            writeln!(buffer, "{}:{}", typ, entry)?;
+        }
+
+        Ok(())
+    }
+
+    tracing::trace!("writing story head information to story buffer");
     let info = get_story_info(story_url, &download_doc)?;
+    write(&mut content_buffer, "title", &info.name)?;
+    for entry in &info.authors {
+        write(&mut content_buffer, "author", entry)?;
+    }
+    write(&mut content_buffer, "summary", &info.summary)?;
 
+    tracing::trace!("writing story meta information to story buffer");
     let meta = get_story_meta(&download_doc);
+    for (typ, entries) in [
+        ("category", &meta.categories),
+        ("origin", &meta.origins),
+        ("warning", &meta.warnings),
+        ("pairing", &meta.pairings),
+        ("character", &meta.characters),
+        ("tag", &meta.generals),
+    ] {
+        for entry in entries {
+            write(&mut content_buffer, typ, entry)?;
+        }
+    }
 
+    tracing::trace!("inserting story into database");
     if ao3fti_queries::insert_story(trans, story_id, info, meta).await? {
         return Ok(());
     }
 
-    let mut content_buffer = String::with_capacity(download_html.len());
+    writeln!(&mut content_buffer)?;
 
     for (chapter_id, chapter) in download_doc
         .select(CHAPTERS_SELECTOR)
